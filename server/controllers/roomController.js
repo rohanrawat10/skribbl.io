@@ -9,6 +9,38 @@ function generateRoomId() {
 
 export function registerRoomEvents(socket, io) {
 
+  // ─── Quick Play ────────────────────────────────────
+  socket.on("quick_play", ({ playerName }) => {
+    if (!playerName?.trim()) return;
+
+    // find any open room in lobby that isn't full
+    const openEntry = Object.values(rooms).find(
+      ({ room }) => room.phase === "lobby" && !room.isFull()
+    );
+
+    if (openEntry) {
+      // join existing open room
+      const result = openEntry.room.addPlayer(socket.id, playerName.trim());
+      if (result.error) return socket.emit("join_error", { message: result.error });
+
+      socket.join(openEntry.room.roomId);
+      socket.emit("room_joined", { room: openEntry.room.toJSON() });
+      socket.to(openEntry.room.roomId).emit("player_joined", {
+        players: openEntry.room.players.map((p) => p.toJSON()),
+      });
+      console.log(`${playerName} quick joined room: ${openEntry.room.roomId}`);
+    } else {
+      // no open rooms — create a new one
+      const roomId = generateRoomId();
+      const room = new Room(roomId, socket.id, playerName.trim(), {});
+      rooms[roomId] = { room, game: null };
+      socket.join(roomId);
+      socket.emit("room_created", { room: room.toJSON() });
+      console.log(`${playerName} quick created room: ${roomId}`);
+    }
+  });
+
+  // ─── Create Room ───────────────────────────────────
   socket.on("create_room", ({ playerName, settings }) => {
     if (!playerName?.trim()) {
       return socket.emit("error_msg", { message: "Name is required" });
@@ -21,6 +53,7 @@ export function registerRoomEvents(socket, io) {
     console.log(`Room created: ${roomId} by ${playerName}`);
   });
 
+  // ─── Join Room ─────────────────────────────────────
   socket.on("join_room", ({ roomId, playerName }) => {
     if (!playerName?.trim()) {
       return socket.emit("error_msg", { message: "Name is required" });
@@ -40,6 +73,7 @@ export function registerRoomEvents(socket, io) {
     console.log(`${playerName} joined room: ${id}`);
   });
 
+  // ─── Start Game ────────────────────────────────────
   socket.on("start_game", () => {
     const entry = getRoomEntryByPlayerId(socket.id);
     if (!entry) return;
@@ -63,6 +97,7 @@ export function registerRoomEvents(socket, io) {
     console.log(`Game started in room: ${room.roomId}`);
   });
 
+  // ─── Disconnect ────────────────────────────────────
   socket.on("disconnect", () => {
     const entry = getRoomEntryByPlayerId(socket.id);
     if (!entry) return;
