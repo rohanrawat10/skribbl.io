@@ -31,4 +31,4 @@ function calcPoints(drawTime, timeLeft) {
   return Math.max(50, Math.round(200 * ratio));
 }
 
-module.exports = { getRandomWords, checkGuess, buildHint, calcPoints };
+module export defualt { getRandomWords, checkGuess, buildHint, calcPoints };
