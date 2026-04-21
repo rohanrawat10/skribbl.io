@@ -28,9 +28,6 @@ io.on("connection", (socket) => {
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`
-  ┌─────────────────────────────────┐
-  │   Skribbl Server Running        │
-  │   http://localhost:${PORT}          │
-  └─────────────────────────────────┘
+     Skribbl Server Running  http://localhost:${PORT}     
   `);
 });

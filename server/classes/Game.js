@@ -1,4 +1,4 @@
-const { getRandomWords, buildHint, calcPoints, checkGuess } = require("../utils/gameUtils");
+import { getRandomWords, buildHint, calcPoints, checkGuess } from "../utils/gameUtils.js";
 
 class Game {
   constructor(room) {
@@ -10,8 +10,6 @@ class Game {
     this.roundStartTime = null;
     this.timer = null;
   }
-
-  // ─── Getters ───────────────────────────────────────
 
   getCurrentDrawer() {
     return this.room.players[this.currentDrawerIndex] || null;
@@ -35,8 +33,6 @@ class Game {
     return nonDrawers.length > 0 && nonDrawers.every((p) => p.hasGuessed);
   }
 
-  // ─── Round Flow ────────────────────────────────────
-
   startRound(io) {
     this.room.phase = "picking";
     this.currentWord = null;
@@ -46,7 +42,6 @@ class Game {
     const drawer = this.getCurrentDrawer();
     const wordOptions = getRandomWords(this.room.settings.wordCount);
 
-    // tell everyone who is drawing
     this.room.broadcast(io, "round_start", {
       drawerId: drawer.id,
       drawerName: drawer.name,
@@ -54,7 +49,6 @@ class Game {
       totalRounds: this.room.settings.rounds,
     });
 
-    // send word choices only to drawer
     io.to(drawer.id).emit("word_options", { words: wordOptions });
   }
 
@@ -64,7 +58,6 @@ class Game {
     this.roundStartTime = Date.now();
 
     const blank = buildHint(word, 0);
-
     this.room.broadcast(io, "drawing_started", {
       drawerId: this.getCurrentDrawer().id,
       hint: blank,
@@ -73,8 +66,6 @@ class Game {
 
     this.startTimer(io);
   }
-
-  // ─── Timer ─────────────────────────────────────────
 
   startTimer(io) {
     let timeLeft = this.room.settings.drawTime;
@@ -87,7 +78,6 @@ class Game {
     this.timer = setInterval(() => {
       timeLeft--;
 
-      // reveal a hint at intervals
       if (
         this.room.settings.hints > 0 &&
         timeLeft % hintInterval === 0 &&
@@ -114,8 +104,6 @@ class Game {
     }
   }
 
-  // ─── End Round ─────────────────────────────────────
-
   endRound(io) {
     this.stopTimer();
     this.room.phase = "end";
@@ -125,14 +113,10 @@ class Game {
       scores: this.room.players.map((p) => p.toJSON()),
     });
 
-    // reset guesses for all players
     this.room.players.forEach((p) => p.resetGuess());
 
     setTimeout(() => {
-      // move to next drawer
-      if (this.isLastDrawer()) {
-        this.round++;
-      }
+      if (this.isLastDrawer()) this.round++;
       this.currentDrawerIndex = this.getNextDrawerIndex();
 
       if (this.isGameOver()) {
@@ -143,19 +127,14 @@ class Game {
     }, 3000);
   }
 
-  // ─── End Game ──────────────────────────────────────
-
   endGame(io) {
     this.room.phase = "lobby";
     const sorted = [...this.room.players].sort((a, b) => b.score - a.score);
-
     this.room.broadcast(io, "game_over", {
       winner: sorted[0].toJSON(),
       leaderboard: sorted.map((p) => p.toJSON()),
     });
   }
-
-  // ─── Guess ─────────────────────────────────────────
 
   handleGuess(playerId, text, io) {
     if (this.room.phase !== "drawing") return;
@@ -165,7 +144,7 @@ class Game {
 
     if (!player || !drawer) return;
     if (player.hasGuessed) return;
-    if (player.id === drawer.id) return; // drawer cant guess
+    if (player.id === drawer.id) return;
 
     if (checkGuess(text, this.currentWord)) {
       const timeLeft =
@@ -175,8 +154,6 @@ class Game {
       const points = calcPoints(this.room.settings.drawTime, timeLeft);
       player.addScore(points);
       player.hasGuessed = true;
-
-      // drawer gets small bonus
       drawer.addScore(10);
 
       this.room.broadcast(io, "guess_result", {
@@ -186,12 +163,8 @@ class Game {
         points,
       });
 
-      // end round if everyone guessed
-      if (this.isRoundOver()) {
-        this.endRound(io);
-      }
+      if (this.isRoundOver()) this.endRound(io);
     } else {
-      // wrong guess — show as chat
       this.room.broadcast(io, "chat_message", {
         playerId: player.id,
         playerName: player.name,

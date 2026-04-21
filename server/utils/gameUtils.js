@@ -1,4 +1,4 @@
-const words = require("../words");
+import words from "../words.js";
 
 function getRandomWords(count) {
   const shuffled = [...words].sort(() => Math.random() - 0.5);
@@ -31,4 +31,4 @@ function calcPoints(drawTime, timeLeft) {
   return Math.max(50, Math.round(200 * ratio));
 }
 
-module export defualt { getRandomWords, checkGuess, buildHint, calcPoints };
+export { getRandomWords, checkGuess, buildHint, calcPoints };

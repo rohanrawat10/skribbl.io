@@ -1,4 +1,4 @@
-const Player = require("./Player");
+import Player from "./Player.js";
 
 class Room {
   constructor(roomId, hostId, hostName, settings = {}) {
@@ -12,7 +12,7 @@ class Room {
       wordCount: settings.wordCount || 3,
       hints: settings.hints || 2,
     };
-    this.phase = "lobby"; // lobby | picking | drawing | end
+    this.phase = "lobby";
     this.drawHistory = [];
   }
 
@@ -20,15 +20,12 @@ class Room {
     if (this.isFull()) return { error: "Room is full" };
     if (this.phase !== "lobby") return { error: "Game already started" };
     if (this.getPlayer(id)) return { error: "Already in room" };
-
     this.players.push(new Player(id, name, false));
     return { success: true };
   }
 
   removePlayer(id) {
     this.players = this.players.filter((p) => p.id !== id);
-
-    // if host left assign next player as host
     if (this.hostId === id && this.players.length > 0) {
       this.players[0].isHost = true;
       this.hostId = this.players[0].id;
