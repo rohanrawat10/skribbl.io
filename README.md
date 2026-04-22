@@ -1,4 +1,4 @@
-# 🎨 Skribbl Clone
+# 🎨 Skribbl
 
 A real-time multiplayer drawing and guessing game 🚀.
 
